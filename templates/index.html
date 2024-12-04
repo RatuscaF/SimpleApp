@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Social App</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/socket.io/client-dist/socket.io.min.js"></script>
+</head>
+<body class="container mt-4">
+    <h1>Posts</h1>
+    <form method="POST" action="/post" class="mb-3">
+        <textarea name="content" class="form-control" placeholder="Write a post..." required></textarea>
+        <button type="submit" class="btn btn-primary mt-2">Post</button>
+    </form>
+    <div id="posts">
+        {% for post in posts %}
+        <div class="card mb-3" id="post-{{ post.id }}">
+            <div class="card-body">
+                <p>{{ post.content }}</p>
+                <form method="POST" action="/comment/{{ post.id }}" class="mt-2">
+                    <textarea name="content" class="form-control" placeholder="Write a comment..." required></textarea>
+                    <button type="submit" class="btn btn-secondary mt-2">Comment</button>
+                </form>
+                <div id="comments-{{ post.id }}">
+                    {% for comment in post.comments %}
+                    <div class="mt-2 ps-4">
+                        <small>{{ comment.content }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <script>
+        // Connect to the Socket.IO server
+        const socket = io();
+
+        // Listen for new posts
+        socket.on('new_post', function(data) {
+            const postsDiv = document.getElementById('posts');
+            const newPost = `
+                <div class="card mb-3" id="post-${data.id}">
+                    <div class="card-body">
+                        <p>${data.content}</p>
+                        <form method="POST" action="/comment/${data.id}" class="mt-2">
+                            <textarea name="content" class="form-control" placeholder="Write a comment..." required></textarea>
+                            <button type="submit" class="btn btn-secondary mt-2">Comment</button>
+                        </form>
+                        <div id="comments-${data.id}"></div>
+                    </div>
+                </div>
+            `;
+            postsDiv.innerHTML = newPost + postsDiv.innerHTML;
+        });
+
+        // Listen for new comments
+        socket.on('new_comment', function(data) {
+            const commentsDiv = document.getElementById(`comments-${data.post_id}`);
+            const newComment = `<div class="mt-2 ps-4"><small>${data.content}</small></div>`;
+            commentsDiv.innerHTML += newComment;
+        });
+    </script>
+</body>
+</html>
